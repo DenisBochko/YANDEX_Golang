@@ -12,15 +12,15 @@ func main() {
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Access granted"))
+	w.Write([]byte("Authorized access"))
 }
 
-func ipBlockerMiddleware(blockedIP string, next http.HandlerFunc) http.HandlerFunc {
+func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := r.Header.Get("X-Real-IP")
+		Authorization := r.Header.Get("Authorization")
 
-		if ip == blockedIP {
-			w.WriteHeader(http.StatusForbidden)
+		if Authorization != "Bearer valid_token" {
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		next(w, r)
@@ -30,7 +30,7 @@ func ipBlockerMiddleware(blockedIP string, next http.HandlerFunc) http.HandlerFu
 func startServer(address string) {
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", ipBlockerMiddleware("192.168.0.1", mainHandler))
+	mux.HandleFunc("/", authMiddleware(mainHandler))
 
 	srv := &http.Server{
 		Addr:         address,
